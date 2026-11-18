@@ -1,48 +1,78 @@
-from typing import Generator
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from typing import AsyncGenerator
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import get_db
 from app.main import app
-from app.models.base import Base
+from app.models import Base
 
-# In-memory SQLite for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
+engine = create_async_engine(
+    TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+TestingSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
 
-@pytest.fixture(scope="function")
-def db_session() -> Generator[Session, None, None]:
-    """Create a fresh database for each test function."""
-    Base.metadata.create_all(bind=engine)
-    session = TestingSessionLocal()
-    try:
+@pytest_asyncio.fixture(scope="function")
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with TestingSessionLocal() as session:
         yield session
-    finally:
-        session.close()
-        Base.metadata.drop_all(bind=engine)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope="function")
-def client(db_session: Session) -> Generator[TestClient, None, None]:
-    """FastAPI TestClient with overridden get_db dependency."""
-
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
+@pytest_asyncio.fixture(scope="function")
+async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    async def override_get_db():
+        yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def sample_project(client: AsyncClient) -> dict:
+    user_resp = await client.post(
+        "/api/v1/users",
+        json={
+            "email": "intern@taskhub.local",
+            "full_name": "Intern User",
+            "password": "password123",
+        },
+    )
+    user = user_resp.json()
+
+    ws_resp = await client.post(
+        "/api/v1/workspaces",
+        json={"name": "Sun Intern Workspace", "owner_id": user["id"]},
+    )
+    workspace = ws_resp.json()
+
+    proj_resp = await client.post(
+        "/api/v1/projects",
+        json={
+            "workspace_id": workspace["id"],
+            "name": "TaskHub Backend",
+            "description": "FastAPI training project",
+        },
+    )
+    project = proj_resp.json()
+    return {"user": user, "workspace": workspace, "project": project}
