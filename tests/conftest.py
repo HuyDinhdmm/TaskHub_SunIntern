@@ -53,7 +53,7 @@ async def sample_project(client: AsyncClient) -> dict:
     user_resp = await client.post(
         "/api/v1/users",
         json={
-            "email": "intern@taskhub.local",
+            "email": "intern@example.com",
             "full_name": "Intern User",
             "password": "password123",
         },
