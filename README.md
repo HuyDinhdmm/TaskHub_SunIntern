@@ -10,16 +10,18 @@ app/
 │   ├── deps.py
 │   └── v1/
 │       ├── endpoints/
+│       │   ├── auth.py
 │       │   ├── health.py
 │       │   ├── projects.py
 │       │   ├── tasks.py
 │       │   ├── users.py
 │       │   └── workspaces.py
 │       └── router.py
-├── core/            # Config, Async Database & Lifespan
+├── core/            # Config, Security (JWT/bcrypt), Async DB & Lifespan
 │   ├── config.py
 │   ├── database.py
-│   └── lifespan.py
+│   ├── lifespan.py
+│   └── security.py
 ├── models/          # SQLAlchemy 2.x Models & Relationships
 │   ├── base.py
 │   ├── comment.py
@@ -50,6 +52,16 @@ tests/               # Async unit/integration tests (pytest-asyncio)
 - `labels`: `id`, `project_id`, `name`, `color`
 - `task_labels`: `task_id`, `label_id`
 - `comments`: `id`, `task_id`, `author_id`, `content`, `created_at`
+- `refresh_tokens`: `id`, `user_id`, `jti`, `expires_at`, `is_revoked`, `created_at`
+
+## Auth & User Profile Endpoints
+- `POST /api/v1/auth/register` - Đăng ký tài khoản (bcrypt)
+- `POST /api/v1/auth/login` - Đăng nhập nhận JWT access + refresh token
+- `POST /api/v1/auth/refresh` - Cấp lại token mới (refresh token rotation)
+- `POST /api/v1/auth/logout` - Đăng xuất và thu hồi refresh token
+- `GET /api/v1/users/me` - Xem thông tin cá nhân (Bearer token)
+- `PATCH /api/v1/users/me` - Cập nhật hồ sơ (full_name, email)
+- `PATCH /api/v1/users/me/password` - Đổi mật khẩu và thu hồi refresh token cũ
 
 ## Hướng dẫn cài đặt và chạy
 
