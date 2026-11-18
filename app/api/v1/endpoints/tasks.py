@@ -1,13 +1,12 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from app.api.deps import get_task_service
+from app.models.enums import TaskPriority, TaskStatus
 from app.schemas.task import (
     TaskCreate,
     TaskListResponse,
     TaskPatch,
-    TaskPriority,
     TaskResponse,
-    TaskStatus,
     TaskUpdate,
 )
 from app.services.task_service import TaskService
@@ -16,25 +15,29 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
-def create_task(
+async def create_task(
     task_in: TaskCreate,
     task_service: TaskService = Depends(get_task_service),
 ):
-    return task_service.create_task(task_in)
+    return await task_service.create_task(task_in)
 
 
 @router.get("", response_model=TaskListResponse)
-def get_tasks(
+async def get_tasks(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    project_id: Optional[int] = None,
+    assignee_id: Optional[int] = None,
     status: Optional[TaskStatus] = None,
     priority: Optional[TaskPriority] = None,
     search: Optional[str] = None,
     task_service: TaskService = Depends(get_task_service),
 ):
-    return task_service.list_tasks(
+    return await task_service.list_tasks(
         page=page,
         page_size=page_size,
+        project_id=project_id,
+        assignee_id=assignee_id,
         status=status,
         priority=priority,
         search=search,
@@ -42,34 +45,34 @@ def get_tasks(
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
-def get_task(
+async def get_task(
     task_id: int,
     task_service: TaskService = Depends(get_task_service),
 ):
-    return task_service.get_task(task_id)
+    return await task_service.get_task(task_id)
 
 
 @router.put("/{task_id}", response_model=TaskResponse)
-def update_task(
+async def update_task(
     task_id: int,
     task_in: TaskUpdate,
     task_service: TaskService = Depends(get_task_service),
 ):
-    return task_service.update_task(task_id, task_in)
+    return await task_service.update_task(task_id, task_in)
 
 
 @router.patch("/{task_id}", response_model=TaskResponse)
-def patch_task(
+async def patch_task(
     task_id: int,
     task_in: TaskPatch,
     task_service: TaskService = Depends(get_task_service),
 ):
-    return task_service.patch_task(task_id, task_in)
+    return await task_service.patch_task(task_id, task_in)
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(
+async def delete_task(
     task_id: int,
     task_service: TaskService = Depends(get_task_service),
 ):
-    task_service.delete_task(task_id)
+    await task_service.delete_task(task_id)
