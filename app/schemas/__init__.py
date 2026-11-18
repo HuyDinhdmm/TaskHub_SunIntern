@@ -1,3 +1,10 @@
+from app.schemas.auth import (
+    LoginRequest,
+    MessageResponse,
+    RefreshTokenRequest,
+    RegisterRequest,
+    TokenResponse,
+)
 from app.schemas.project import (
     ProjectCreate,
     ProjectListResponse,
@@ -14,7 +21,13 @@ from app.schemas.task import (
     TaskStatus,
     TaskUpdate,
 )
-from app.schemas.user import UserCreate, UserListResponse, UserResponse
+from app.schemas.user import (
+    ChangePasswordRequest,
+    UserCreate,
+    UserListResponse,
+    UserResponse,
+    UserUpdateProfile,
+)
 from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceListResponse,
@@ -22,7 +35,14 @@ from app.schemas.workspace import (
 )
 
 __all__ = [
+    "RegisterRequest",
+    "LoginRequest",
+    "RefreshTokenRequest",
+    "TokenResponse",
+    "MessageResponse",
     "UserCreate",
+    "UserUpdateProfile",
+    "ChangePasswordRequest",
     "UserResponse",
     "UserListResponse",
     "WorkspaceCreate",
