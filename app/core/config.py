@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "TaskHub API"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "sqlite:///./taskhub.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./taskhub.db"
 
 
 settings = Settings()
