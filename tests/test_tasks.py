@@ -141,3 +141,61 @@ async def test_labels_and_comments_flow(client: AsyncClient, sample_project: dic
     rem_lbl = await client.delete(f"/api/v1/tasks/{task_id}/labels/{label_id}", headers=headers)
     assert rem_lbl.status_code == 200
     assert len(rem_lbl.json()["labels"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_task_assignment_email_background_task(client: AsyncClient, sample_project: dict):
+    from app.core.notifications import sent_notifications
+
+    sent_notifications.clear()
+    headers = sample_project["headers"]
+    proj_id = sample_project["project"]["id"]
+    user_id = sample_project["user"]["id"]
+    user_email = sample_project["user"]["email"]
+
+    # 1. Tao task co assignee_id -> background task phai gui email thong bao
+    payload = {
+        "title": "Task Background Email Test",
+        "description": "Kiem tra email gui khi tao task",
+        "assignee_id": user_id,
+        "status": "TODO",
+        "priority": "HIGH",
+    }
+    create_resp = await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json=payload,
+        headers=headers,
+    )
+    assert create_resp.status_code == 201
+    task_id = create_resp.json()["id"]
+
+    assert len(sent_notifications) == 1
+    assert sent_notifications[0]["to_email"] == user_email
+    assert sent_notifications[0]["task_id"] == task_id
+    assert "Task Background Email Test" in sent_notifications[0]["subject"]
+
+    # 2. Tao user moi va them vao workspace
+    reg_resp = await client.post(
+        "/api/v1/auth/register",
+        json={"email": "member2@example.com", "full_name": "Member Two", "password": "password123"},
+    )
+    assert reg_resp.status_code == 201
+    member2_id = reg_resp.json()["id"]
+
+    ws_id = sample_project["workspace"]["id"]
+    await client.post(
+        f"/api/v1/workspaces/{ws_id}/members",
+        json={"user_id": member2_id, "role": "EDITOR"},
+        headers=headers,
+    )
+
+    # 3. Patch task doi assignee sang member2 -> phai gui email cho member2
+    patch_resp = await client.patch(
+        f"/api/v1/tasks/{task_id}",
+        json={"assignee_id": member2_id},
+        headers=headers,
+    )
+    assert patch_resp.status_code == 200
+    assert len(sent_notifications) == 2
+    assert sent_notifications[1]["to_email"] == "member2@example.com"
+    assert sent_notifications[1]["task_id"] == task_id

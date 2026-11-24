@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 
 from app.api.deps import get_current_user, get_task_service
 from app.models.enums import TaskPriority, TaskStatus
@@ -50,10 +50,16 @@ async def list_project_tasks(
 async def create_project_task(
     project_id: int,
     task_in: TaskCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     task_service: TaskService = Depends(get_task_service),
 ):
-    return await task_service.create_task(project_id, task_in, current_user)
+    return await task_service.create_task(
+        project_id=project_id,
+        data=task_in,
+        current_user=current_user,
+        background_tasks=background_tasks,
+    )
 
 
 # GET /api/v1/tasks/{id}
@@ -71,10 +77,16 @@ async def get_task(
 async def patch_task(
     task_id: int,
     task_in: TaskPatch,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     task_service: TaskService = Depends(get_task_service),
 ):
-    return await task_service.patch_task(task_id, task_in, current_user)
+    return await task_service.patch_task(
+        task_id=task_id,
+        data=task_in,
+        current_user=current_user,
+        background_tasks=background_tasks,
+    )
 
 
 # DELETE /api/v1/tasks/{id}
