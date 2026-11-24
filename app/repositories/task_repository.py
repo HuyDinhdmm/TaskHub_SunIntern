@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.models.enums import TaskPriority, TaskStatus
@@ -46,9 +46,21 @@ class TaskRepository(BaseRepository[Task]):
             keyword = f"%{search}%"
             filters.append(Task.title.ilike(keyword) | Task.description.ilike(keyword))
 
-        return await self.get_multi(
-            page=page,
-            page_size=page_size,
-            filters=filters,
-            order_by=Task.id.desc(),
+        stmt = select(Task).options(
+            selectinload(Task.labels),
+            selectinload(Task.comments),
         )
+        count_stmt = select(func.count()).select_from(Task)
+
+        for condition in filters:
+            stmt = stmt.where(condition)
+            count_stmt = count_stmt.where(condition)
+
+        stmt = stmt.order_by(Task.id.desc())
+        offset = (page - 1) * page_size
+        stmt = stmt.offset(offset).limit(page_size)
+
+        total = (await self.db.scalar(count_stmt)) or 0
+        result = await self.db.scalars(stmt)
+        items = list(result.all())
+        return items, total
