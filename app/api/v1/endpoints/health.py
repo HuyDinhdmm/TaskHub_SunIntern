@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.config import settings
 from app.core.database import get_db
 

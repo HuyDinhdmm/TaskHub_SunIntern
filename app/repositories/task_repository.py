@@ -1,7 +1,9 @@
 from typing import List, Optional, Tuple
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
 from app.models.enums import TaskPriority, TaskStatus
 from app.models.task import Task
 from app.repositories.base import BaseRepository

@@ -1,6 +1,8 @@
 from typing import Optional
+
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.refresh_token import RefreshToken
 from app.repositories.base import BaseRepository
 

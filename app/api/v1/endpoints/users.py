@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query, status
+
 from app.api.deps import get_current_user, get_user_service
 from app.models.user import User
 from app.schemas.auth import MessageResponse

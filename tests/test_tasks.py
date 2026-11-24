@@ -70,9 +70,16 @@ async def test_get_task_not_found(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_list_tasks_pagination_and_filter(client: AsyncClient, sample_project: dict):
     project_id = sample_project["project"]["id"]
-    await client.post("/api/v1/tasks", json={"project_id": project_id, "title": "Task 1", "status": "TODO"})
-    await client.post("/api/v1/tasks", json={"project_id": project_id, "title": "Task 2", "status": "DONE"})
-    await client.post("/api/v1/tasks", json={"project_id": project_id, "title": "Task 3 Alembic", "status": "IN_PROGRESS"})
+    await client.post(
+        "/api/v1/tasks", json={"project_id": project_id, "title": "Task 1", "status": "TODO"}
+    )
+    await client.post(
+        "/api/v1/tasks", json={"project_id": project_id, "title": "Task 2", "status": "DONE"}
+    )
+    await client.post(
+        "/api/v1/tasks",
+        json={"project_id": project_id, "title": "Task 3 Alembic", "status": "IN_PROGRESS"},
+    )
 
     # Test phan trang
     resp = await client.get("/api/v1/tasks?page=1&page_size=2")

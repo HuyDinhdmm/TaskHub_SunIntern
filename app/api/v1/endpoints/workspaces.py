@@ -1,6 +1,6 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
-from app.api.deps import get_current_user, get_workspace_service
+
+from app.api.deps import get_current_user, get_project_service, get_workspace_service
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectResponse
 from app.schemas.workspace import (
@@ -14,7 +14,6 @@ from app.schemas.workspace import (
 )
 from app.services.project_service import ProjectService
 from app.services.workspace_service import WorkspaceService
-from app.api.deps import get_project_service
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -66,7 +65,11 @@ async def delete_workspace(
     await workspace_service.delete_workspace(workspace_id, current_user)
 
 
-@router.post("/{workspace_id}/members", response_model=WorkspaceMemberResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{workspace_id}/members",
+    response_model=WorkspaceMemberResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_workspace_member(
     workspace_id: int,
     payload: WorkspaceMemberAdd,
@@ -98,7 +101,9 @@ async def update_member_role(
 
 
 # POST /api/v1/workspaces/{id}/projects (tao project trong workspace)
-@router.post("/{workspace_id}/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{workspace_id}/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_workspace_project(
     workspace_id: int,
     project_in: ProjectCreate,

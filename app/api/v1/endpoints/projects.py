@@ -1,5 +1,7 @@
 from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, status
+
 from app.api.deps import get_current_user, get_project_service
 from app.models.enums import ProjectStatus
 from app.models.user import User

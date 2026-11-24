@@ -1,8 +1,10 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Tuple
-import uuid
+
 import bcrypt
 import jwt
+
 from app.core.config import settings
 
 
