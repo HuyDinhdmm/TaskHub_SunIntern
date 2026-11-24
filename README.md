@@ -89,7 +89,17 @@ tests/               # Async unit/integration tests (pytest-asyncio)
 - `POST /api/v1/tasks/{id}/comments` - Thêm comment vào task
 - `DELETE /api/v1/comments/{id}` - Xóa comment (tác giả hoặc owner)
 
-## Hướng dẫn cài đặt và chạy
+## Chạy với Docker Compose (Toàn bộ stack: App + PostgreSQL + Redis)
+```bash
+docker compose up -d --build
+```
+- API Docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/api/v1/health
+
+## Background Tasks
+- Tự động gửi email thông báo khi một user được assign vào task mới hoặc được đổi assignee (`FastAPI.BackgroundTasks`).
+
+## Hướng dẫn cài đặt và chạy local
 
 1. Tạo môi trường ảo và cài thư viện:
 ```bash
