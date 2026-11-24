@@ -5,6 +5,8 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
 )
+from app.schemas.comment import CommentCreate, CommentResponse
+from app.schemas.label import LabelCreate, LabelResponse, LabelUpdate
 from app.schemas.project import (
     ProjectCreate,
     ProjectListResponse,
@@ -31,7 +33,11 @@ from app.schemas.user import (
 from app.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceListResponse,
+    WorkspaceMemberAdd,
+    WorkspaceMemberResponse,
+    WorkspaceMemberUpdate,
     WorkspaceResponse,
+    WorkspaceUpdate,
 )
 
 __all__ = [
@@ -46,6 +52,10 @@ __all__ = [
     "UserResponse",
     "UserListResponse",
     "WorkspaceCreate",
+    "WorkspaceUpdate",
+    "WorkspaceMemberAdd",
+    "WorkspaceMemberUpdate",
+    "WorkspaceMemberResponse",
     "WorkspaceResponse",
     "WorkspaceListResponse",
     "ProjectCreate",
@@ -60,4 +70,9 @@ __all__ = [
     "TaskListResponse",
     "TaskStatus",
     "TaskPriority",
+    "LabelCreate",
+    "LabelUpdate",
+    "LabelResponse",
+    "CommentCreate",
+    "CommentResponse",
 ]

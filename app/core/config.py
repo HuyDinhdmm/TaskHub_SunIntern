@@ -17,5 +17,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    REDIS_URL: str = "redis://localhost:6379/0"
+    CACHE_ENABLED: bool = True
+
 
 settings = Settings()
