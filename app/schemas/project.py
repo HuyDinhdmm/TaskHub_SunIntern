@@ -5,7 +5,6 @@ from app.models.enums import ProjectStatus
 
 
 class ProjectCreate(BaseModel):
-    workspace_id: int
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     status: ProjectStatus = ProjectStatus.ACTIVE
