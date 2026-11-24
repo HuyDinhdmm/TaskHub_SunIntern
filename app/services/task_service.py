@@ -1,6 +1,8 @@
 import math
 from typing import Optional
+
 from fastapi import HTTPException, status
+
 from app.core.cache import delete_cache, get_cache, set_cache
 from app.core.permissions import AccessControl
 from app.models.comment import Comment
@@ -13,8 +15,8 @@ from app.repositories.label_repository import LabelRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.comment import CommentCreate, CommentResponse
-from app.schemas.label import LabelCreate, LabelResponse, LabelUpdate
+from app.schemas.comment import CommentCreate
+from app.schemas.label import LabelCreate, LabelUpdate
 from app.schemas.task import (
     TaskCreate,
     TaskListResponse,

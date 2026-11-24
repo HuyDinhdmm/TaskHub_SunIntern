@@ -1,4 +1,5 @@
 from typing import AsyncGenerator
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -84,4 +85,10 @@ async def sample_project(client: AsyncClient) -> dict:
         headers=headers,
     )
     project = proj_resp.json()
-    return {"user": user_info, "workspace": workspace, "project": project, "token": token, "headers": headers}
+    return {
+        "user": user_info,
+        "workspace": workspace,
+        "project": project,
+        "token": token,
+        "headers": headers,
+    }

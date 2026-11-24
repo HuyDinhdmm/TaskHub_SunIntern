@@ -1,5 +1,7 @@
 from typing import List, Optional, Tuple
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.enums import ProjectStatus
 from app.models.project import Project
 from app.repositories.base import BaseRepository

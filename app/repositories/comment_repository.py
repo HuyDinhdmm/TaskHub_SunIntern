@@ -1,6 +1,8 @@
 from typing import List
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.comment import Comment
 from app.repositories.base import BaseRepository
 

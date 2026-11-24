@@ -31,10 +31,12 @@ async def test_create_task_and_rbac(client: AsyncClient, sample_project: dict):
         "/api/v1/auth/register",
         json={"email": "stranger@example.com", "full_name": "Stranger", "password": "password123"},
     )
-    login_stranger = (await client.post(
-        "/api/v1/auth/login",
-        json={"email": "stranger@example.com", "password": "password123"},
-    )).json()
+    login_stranger = (
+        await client.post(
+            "/api/v1/auth/login",
+            json={"email": "stranger@example.com", "password": "password123"},
+        )
+    ).json()
     stranger_hdr = {"Authorization": f"Bearer {login_stranger['access_token']}"}
 
     bad_resp = await client.get(
@@ -49,12 +51,26 @@ async def test_filtering_and_pagination(client: AsyncClient, sample_project: dic
     headers = sample_project["headers"]
     proj_id = sample_project["project"]["id"]
 
-    await client.post(f"/api/v1/projects/{proj_id}/tasks", json={"title": "Task 1", "status": "TODO", "priority": "LOW"}, headers=headers)
-    await client.post(f"/api/v1/projects/{proj_id}/tasks", json={"title": "Task 2", "status": "DONE", "priority": "HIGH"}, headers=headers)
-    await client.post(f"/api/v1/projects/{proj_id}/tasks", json={"title": "Task 3 Search", "status": "TODO", "priority": "URGENT"}, headers=headers)
+    await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task 1", "status": "TODO", "priority": "LOW"},
+        headers=headers,
+    )
+    await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task 2", "status": "DONE", "priority": "HIGH"},
+        headers=headers,
+    )
+    await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task 3 Search", "status": "TODO", "priority": "URGENT"},
+        headers=headers,
+    )
 
     # Phan trang
-    p_resp = await client.get(f"/api/v1/projects/{proj_id}/tasks?page=1&page_size=2", headers=headers)
+    p_resp = await client.get(
+        f"/api/v1/projects/{proj_id}/tasks?page=1&page_size=2", headers=headers
+    )
     assert p_resp.status_code == 200
     data = p_resp.json()
     assert data["total"] == 3

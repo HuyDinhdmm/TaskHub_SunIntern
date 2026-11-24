@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+
 from app.api.deps import get_auth_service
 from app.schemas.auth import (
     LoginRequest,

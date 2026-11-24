@@ -1,6 +1,8 @@
 from typing import Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.workspace import WorkspaceMember
 from app.repositories.base import BaseRepository
 

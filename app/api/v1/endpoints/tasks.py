@@ -1,5 +1,7 @@
 from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, status
+
 from app.api.deps import get_current_user, get_task_service
 from app.models.enums import TaskPriority, TaskStatus
 from app.models.user import User
@@ -10,7 +12,6 @@ from app.schemas.task import (
     TaskListResponse,
     TaskPatch,
     TaskResponse,
-    TaskUpdate,
 )
 from app.services.task_service import TaskService
 
@@ -43,7 +44,9 @@ async def list_project_tasks(
 
 
 # POST /api/v1/projects/{id}/tasks
-@router.post("/projects/{project_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/projects/{project_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_project_task(
     project_id: int,
     task_in: TaskCreate,
@@ -107,7 +110,9 @@ async def remove_label_from_task(
 
 
 # POST /api/v1/tasks/{id}/comments
-@router.post("/tasks/{task_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tasks/{task_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED
+)
 async def add_comment(
     task_id: int,
     comment_in: CommentCreate,
@@ -128,7 +133,11 @@ async def delete_comment(
 
 
 # Labels CRUD per project
-@router.post("/projects/{project_id}/labels", response_model=LabelResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/projects/{project_id}/labels",
+    response_model=LabelResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_label(
     project_id: int,
     label_in: LabelCreate,

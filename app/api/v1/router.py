@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.api.v1.endpoints import auth, health, projects, tasks, users, workspaces
 
 api_router = APIRouter()
