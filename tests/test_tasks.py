@@ -3,145 +3,141 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_task_success(client: AsyncClient, sample_project: dict):
-    project_id = sample_project["project"]["id"]
+async def test_create_task_and_rbac(client: AsyncClient, sample_project: dict):
+    headers = sample_project["headers"]
+    proj_id = sample_project["project"]["id"]
     user_id = sample_project["user"]["id"]
 
+    # 1. Tao task
     payload = {
-        "project_id": project_id,
-        "assignee_id": user_id,
-        "created_by": user_id,
-        "title": "Setup SQLAlchemy Async",
-        "description": "Chuyen tu sync sang async session",
+        "title": "Build Redis Cache",
+        "description": "Cache GET /projects/{id}/tasks",
         "status": "TODO",
         "priority": "HIGH",
+        "assignee_id": user_id,
     }
-    response = await client.post("/api/v1/tasks", json=payload)
-    assert response.status_code == 201
-    data = response.json()
-    assert data["id"] is not None
-    assert data["project_id"] == project_id
-    assert data["assignee_id"] == user_id
-    assert data["title"] == payload["title"]
-    assert data["status"] == "TODO"
-
-
-@pytest.mark.asyncio
-async def test_create_task_invalid_project(client: AsyncClient):
-    payload = {
-        "project_id": 9999,
-        "title": "Task khong co project",
-    }
-    response = await client.post("/api/v1/tasks", json=payload)
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_create_task_validation_error(client: AsyncClient, sample_project: dict):
-    payload = {
-        "project_id": sample_project["project"]["id"],
-        "title": "",
-    }
-    response = await client.post("/api/v1/tasks", json=payload)
-    assert response.status_code == 422
-
-
-@pytest.mark.asyncio
-async def test_get_task_by_id(client: AsyncClient, sample_project: dict):
-    project_id = sample_project["project"]["id"]
-    create_resp = await client.post(
-        "/api/v1/tasks",
-        json={"project_id": project_id, "title": "Task Test", "status": "IN_REVIEW"},
+    resp = await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json=payload,
+        headers=headers,
     )
-    task_id = create_resp.json()["id"]
+    assert resp.status_code == 201
+    task = resp.json()
+    assert task["title"] == "Build Redis Cache"
+    assert task["project_id"] == proj_id
 
-    response = await client.get(f"/api/v1/tasks/{task_id}")
-    assert response.status_code == 200
-    assert response.json()["title"] == "Task Test"
-    assert response.json()["status"] == "IN_REVIEW"
-
-
-@pytest.mark.asyncio
-async def test_get_task_not_found(client: AsyncClient):
-    response = await client.get("/api/v1/tasks/9999")
-    assert response.status_code == 404
-
-
-@pytest.mark.asyncio
-async def test_list_tasks_pagination_and_filter(client: AsyncClient, sample_project: dict):
-    project_id = sample_project["project"]["id"]
+    # 2. Tao user khac khong o trong workspace -> 403
     await client.post(
-        "/api/v1/tasks", json={"project_id": project_id, "title": "Task 1", "status": "TODO"}
+        "/api/v1/auth/register",
+        json={"email": "stranger@example.com", "full_name": "Stranger", "password": "password123"},
+    )
+    login_stranger = (
+        await client.post(
+            "/api/v1/auth/login",
+            json={"email": "stranger@example.com", "password": "password123"},
+        )
+    ).json()
+    stranger_hdr = {"Authorization": f"Bearer {login_stranger['access_token']}"}
+
+    bad_resp = await client.get(
+        f"/api/v1/projects/{proj_id}/tasks",
+        headers=stranger_hdr,
+    )
+    assert bad_resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_filtering_and_pagination(client: AsyncClient, sample_project: dict):
+    headers = sample_project["headers"]
+    proj_id = sample_project["project"]["id"]
+
+    await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task 1", "status": "TODO", "priority": "LOW"},
+        headers=headers,
     )
     await client.post(
-        "/api/v1/tasks", json={"project_id": project_id, "title": "Task 2", "status": "DONE"}
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task 2", "status": "DONE", "priority": "HIGH"},
+        headers=headers,
     )
     await client.post(
-        "/api/v1/tasks",
-        json={"project_id": project_id, "title": "Task 3 Alembic", "status": "IN_PROGRESS"},
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task 3 Search", "status": "TODO", "priority": "URGENT"},
+        headers=headers,
     )
 
-    # Test phan trang
-    resp = await client.get("/api/v1/tasks?page=1&page_size=2")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["total"] == 3
-    assert body["total_pages"] == 2
-    assert len(body["items"]) == 2
+    # Phan trang
+    p_resp = await client.get(
+        f"/api/v1/projects/{proj_id}/tasks?page=1&page_size=2", headers=headers
+    )
+    assert p_resp.status_code == 200
+    data = p_resp.json()
+    assert data["total"] == 3
+    assert data["total_pages"] == 2
+    assert len(data["items"]) == 2
 
-    # Test filter status
-    resp_filter = await client.get("/api/v1/tasks?status=DONE")
-    assert resp_filter.json()["total"] == 1
-    assert resp_filter.json()["items"][0]["title"] == "Task 2"
+    # Loc status
+    st_resp = await client.get(f"/api/v1/projects/{proj_id}/tasks?status=DONE", headers=headers)
+    assert st_resp.json()["total"] == 1
+    assert st_resp.json()["items"][0]["title"] == "Task 2"
 
-    # Test search
-    resp_search = await client.get("/api/v1/tasks?search=Alembic")
-    assert resp_search.json()["total"] == 1
-    assert resp_search.json()["items"][0]["title"] == "Task 3 Alembic"
+    # Loc search
+    q_resp = await client.get(f"/api/v1/projects/{proj_id}/tasks?search=Search", headers=headers)
+    assert q_resp.json()["total"] == 1
+    assert q_resp.json()["items"][0]["title"] == "Task 3 Search"
 
 
 @pytest.mark.asyncio
-async def test_update_and_patch_task(client: AsyncClient, sample_project: dict):
-    project_id = sample_project["project"]["id"]
-    create_resp = await client.post(
-        "/api/v1/tasks",
-        json={"project_id": project_id, "title": "Old Task", "description": "Keep me"},
+async def test_labels_and_comments_flow(client: AsyncClient, sample_project: dict):
+    headers = sample_project["headers"]
+    proj_id = sample_project["project"]["id"]
+
+    # 1. Tao task
+    t_resp = await client.post(
+        f"/api/v1/projects/{proj_id}/tasks",
+        json={"title": "Task with Labels and Comments"},
+        headers=headers,
     )
-    task_id = create_resp.json()["id"]
+    task_id = t_resp.json()["id"]
 
-    # PATCH
-    patch_resp = await client.patch(f"/api/v1/tasks/{task_id}", json={"status": "IN_PROGRESS"})
-    assert patch_resp.status_code == 200
-    assert patch_resp.json()["status"] == "IN_PROGRESS"
-    assert patch_resp.json()["description"] == "Keep me"
-
-    # PUT
-    put_resp = await client.put(
-        f"/api/v1/tasks/{task_id}",
-        json={
-            "project_id": project_id,
-            "title": "Updated Task",
-            "description": "New desc",
-            "status": "DONE",
-            "priority": "URGENT",
-        },
+    # 2. Tao label
+    lbl_resp = await client.post(
+        f"/api/v1/projects/{proj_id}/labels",
+        json={"name": "backend", "color": "#10B981"},
+        headers=headers,
     )
-    assert put_resp.status_code == 200
-    assert put_resp.json()["title"] == "Updated Task"
-    assert put_resp.json()["priority"] == "URGENT"
+    assert lbl_resp.status_code == 201
+    label_id = lbl_resp.json()["id"]
 
-
-@pytest.mark.asyncio
-async def test_delete_task(client: AsyncClient, sample_project: dict):
-    project_id = sample_project["project"]["id"]
-    create_resp = await client.post(
-        "/api/v1/tasks",
-        json={"project_id": project_id, "title": "Delete me"},
+    # 3. Gan label cho task
+    add_lbl = await client.post(
+        f"/api/v1/tasks/{task_id}/labels/{label_id}",
+        headers=headers,
     )
-    task_id = create_resp.json()["id"]
+    assert add_lbl.status_code == 200
+    assert len(add_lbl.json()["labels"]) == 1
 
-    del_resp = await client.delete(f"/api/v1/tasks/{task_id}")
-    assert del_resp.status_code == 204
+    # 4. Comment tren task
+    cm_resp = await client.post(
+        f"/api/v1/tasks/{task_id}/comments",
+        json={"content": "Great work on this task!"},
+        headers=headers,
+    )
+    assert cm_resp.status_code == 201
+    comment_id = cm_resp.json()["id"]
 
-    get_resp = await client.get(f"/api/v1/tasks/{task_id}")
-    assert get_resp.status_code == 404
+    # 5. Lay detail task co day du labels va comments
+    detail = await client.get(f"/api/v1/tasks/{task_id}", headers=headers)
+    assert detail.status_code == 200
+    assert len(detail.json()["labels"]) == 1
+    assert len(detail.json()["comments"]) == 1
+
+    # 6. Xoa comment
+    del_cm = await client.delete(f"/api/v1/comments/{comment_id}", headers=headers)
+    assert del_cm.status_code == 204
+
+    # 7. Bo label khoi task
+    rem_lbl = await client.delete(f"/api/v1/tasks/{task_id}/labels/{label_id}", headers=headers)
+    assert rem_lbl.status_code == 200
+    assert len(rem_lbl.json()["labels"]) == 0

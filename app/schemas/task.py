@@ -4,17 +4,17 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import TaskPriority, TaskStatus
+from app.schemas.comment import CommentResponse
+from app.schemas.label import LabelResponse
 
 
 class TaskBase(BaseModel):
-    project_id: int
-    assignee_id: Optional[int] = None
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     status: TaskStatus = TaskStatus.TODO
     priority: TaskPriority = TaskPriority.MEDIUM
     due_date: Optional[datetime] = None
-    created_by: Optional[int] = None
+    assignee_id: Optional[int] = None
 
 
 class TaskCreate(TaskBase):
@@ -22,29 +22,32 @@ class TaskCreate(TaskBase):
 
 
 class TaskUpdate(BaseModel):
-    project_id: int
-    assignee_id: Optional[int] = None
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
     status: TaskStatus
     priority: TaskPriority
     due_date: Optional[datetime] = None
+    assignee_id: Optional[int] = None
 
 
 class TaskPatch(BaseModel):
-    assignee_id: Optional[int] = None
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     due_date: Optional[datetime] = None
+    assignee_id: Optional[int] = None
 
 
 class TaskResponse(TaskBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    project_id: int
+    created_by: Optional[int] = None
     created_at: datetime
+    labels: List[LabelResponse] = []
+    comments: List[CommentResponse] = []
 
 
 class TaskListResponse(BaseModel):

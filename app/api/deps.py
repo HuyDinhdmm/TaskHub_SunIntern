@@ -7,6 +7,8 @@ from app.core.database import get_db
 from app.core.permissions import AccessControl
 from app.core.security import decode_token
 from app.models.user import User
+from app.repositories.comment_repository import CommentRepository
+from app.repositories.label_repository import LabelRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.task_repository import TaskRepository
@@ -50,6 +52,14 @@ def get_task_repository(db: AsyncSession = Depends(get_db)) -> TaskRepository:
     return TaskRepository(db)
 
 
+def get_label_repository(db: AsyncSession = Depends(get_db)) -> LabelRepository:
+    return LabelRepository(db)
+
+
+def get_comment_repository(db: AsyncSession = Depends(get_db)) -> CommentRepository:
+    return CommentRepository(db)
+
+
 def get_access_control(
     ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
     member_repo: WorkspaceMemberRepository = Depends(get_workspace_member_repository),
@@ -91,8 +101,19 @@ def get_project_service(
 def get_task_service(
     repo: TaskRepository = Depends(get_task_repository),
     project_repo: ProjectRepository = Depends(get_project_repository),
+    label_repo: LabelRepository = Depends(get_label_repository),
+    comment_repo: CommentRepository = Depends(get_comment_repository),
+    user_repo: UserRepository = Depends(get_user_repository),
+    access_control: AccessControl = Depends(get_access_control),
 ) -> TaskService:
-    return TaskService(repo, project_repo)
+    return TaskService(
+        repository=repo,
+        project_repository=project_repo,
+        label_repository=label_repo,
+        comment_repository=comment_repo,
+        user_repository=user_repo,
+        access_control=access_control,
+    )
 
 
 async def get_current_user(

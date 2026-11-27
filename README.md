@@ -76,6 +76,19 @@ tests/               # Async unit/integration tests (pytest-asyncio)
 - `PATCH /api/v1/projects/{id}` - Cập nhật/archive project (OWNER/EDITOR)
 - `DELETE /api/v1/projects/{id}` - Xóa project (chỉ OWNER)
 
+## Task, Label & Comment Endpoints (Redis Caching & Filter)
+- `GET /api/v1/projects/{id}/tasks` - Lấy danh sách task (lọc status, priority, assignee, search, phân trang, có cache Redis)
+- `POST /api/v1/projects/{id}/tasks` - Tạo task trong project (invalidate cache)
+- `GET /api/v1/tasks/{id}` - Chi tiết task kèm labels và comments
+- `PATCH /api/v1/tasks/{id}` - Sửa task (status, priority, assignee, due_date)
+- `DELETE /api/v1/tasks/{id}` - Xóa task
+- `POST /api/v1/projects/{id}/labels` - Tạo label trong project
+- `GET /api/v1/projects/{id}/labels` - Danh sách label của project
+- `POST /api/v1/tasks/{id}/labels/{label_id}` - Gán label cho task
+- `DELETE /api/v1/tasks/{id}/labels/{label_id}` - Bỏ label khỏi task
+- `POST /api/v1/tasks/{id}/comments` - Thêm comment vào task
+- `DELETE /api/v1/comments/{id}` - Xóa comment (tác giả hoặc owner)
+
 ## Hướng dẫn cài đặt và chạy
 
 1. Tạo môi trường ảo và cài thư viện:
