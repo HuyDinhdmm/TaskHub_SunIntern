@@ -2,13 +2,16 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_db
+from app.core.permissions import AccessControl
 from app.core.security import decode_token
 from app.models.user import User
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.refresh_token_repository import RefreshTokenRepository
 from app.repositories.task_repository import TaskRepository
 from app.repositories.user_repository import UserRepository
+from app.repositories.workspace_member_repository import WorkspaceMemberRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.services.auth_service import AuthService
 from app.services.project_service import ProjectService
@@ -33,12 +36,25 @@ def get_workspace_repository(db: AsyncSession = Depends(get_db)) -> WorkspaceRep
     return WorkspaceRepository(db)
 
 
+def get_workspace_member_repository(
+    db: AsyncSession = Depends(get_db),
+) -> WorkspaceMemberRepository:
+    return WorkspaceMemberRepository(db)
+
+
 def get_project_repository(db: AsyncSession = Depends(get_db)) -> ProjectRepository:
     return ProjectRepository(db)
 
 
 def get_task_repository(db: AsyncSession = Depends(get_db)) -> TaskRepository:
     return TaskRepository(db)
+
+
+def get_access_control(
+    ws_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    member_repo: WorkspaceMemberRepository = Depends(get_workspace_member_repository),
+) -> AccessControl:
+    return AccessControl(ws_repo, member_repo)
 
 
 def get_auth_service(
@@ -57,16 +73,19 @@ def get_user_service(
 
 def get_workspace_service(
     repo: WorkspaceRepository = Depends(get_workspace_repository),
+    member_repo: WorkspaceMemberRepository = Depends(get_workspace_member_repository),
     user_repo: UserRepository = Depends(get_user_repository),
+    access_control: AccessControl = Depends(get_access_control),
 ) -> WorkspaceService:
-    return WorkspaceService(repo, user_repo)
+    return WorkspaceService(repo, member_repo, user_repo, access_control)
 
 
 def get_project_service(
     repo: ProjectRepository = Depends(get_project_repository),
     workspace_repo: WorkspaceRepository = Depends(get_workspace_repository),
+    access_control: AccessControl = Depends(get_access_control),
 ) -> ProjectService:
-    return ProjectService(repo, workspace_repo)
+    return ProjectService(repo, workspace_repo, access_control)
 
 
 def get_task_service(

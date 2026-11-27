@@ -1,5 +1,7 @@
 from typing import Optional
+
 from fastapi import HTTPException, status
+
 from app.core.security import hash_password, verify_password
 from app.models.user import User
 from app.repositories.refresh_token_repository import RefreshTokenRepository

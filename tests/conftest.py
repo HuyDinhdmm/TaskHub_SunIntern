@@ -1,4 +1,5 @@
 from typing import AsyncGenerator
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -50,29 +51,44 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
 @pytest_asyncio.fixture(scope="function")
 async def sample_project(client: AsyncClient) -> dict:
-    user_resp = await client.post(
-        "/api/v1/users",
+    # Dang ky va login de lay token
+    await client.post(
+        "/api/v1/auth/register",
         json={
-            "email": "intern@example.com",
-            "full_name": "Intern User",
+            "email": "intern_setup@example.com",
+            "full_name": "Intern Setup",
             "password": "password123",
         },
     )
-    user = user_resp.json()
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "intern_setup@example.com", "password": "password123"},
+    )
+    token = login_resp.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    user_info = (await client.get("/api/v1/users/me", headers=headers)).json()
 
     ws_resp = await client.post(
         "/api/v1/workspaces",
-        json={"name": "Sun Intern Workspace", "owner_id": user["id"]},
+        json={"name": "Sun Intern Workspace"},
+        headers=headers,
     )
     workspace = ws_resp.json()
 
     proj_resp = await client.post(
-        "/api/v1/projects",
+        f"/api/v1/workspaces/{workspace['id']}/projects",
         json={
-            "workspace_id": workspace["id"],
             "name": "TaskHub Backend",
             "description": "FastAPI training project",
         },
+        headers=headers,
     )
     project = proj_resp.json()
-    return {"user": user, "workspace": workspace, "project": project}
+    return {
+        "user": user_info,
+        "workspace": workspace,
+        "project": project,
+        "token": token,
+        "headers": headers,
+    }

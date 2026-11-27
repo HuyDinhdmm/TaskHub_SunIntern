@@ -1,5 +1,7 @@
 from typing import Optional
+
 from fastapi import APIRouter, Depends, Query, status
+
 from app.api.deps import get_task_service
 from app.models.enums import TaskPriority, TaskStatus
 from app.schemas.task import (

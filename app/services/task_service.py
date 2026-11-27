@@ -1,6 +1,8 @@
 import math
 from typing import Optional
+
 from fastapi import HTTPException, status
+
 from app.models.enums import TaskPriority, TaskStatus
 from app.models.task import Task
 from app.repositories.project_repository import ProjectRepository

@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
+
 import jwt
 from fastapi import HTTPException, status
+
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -66,6 +68,11 @@ class AuthService:
     async def refresh_token(self, data: RefreshTokenRequest) -> TokenResponse:
         payload = self._decode_refresh_payload(data.refresh_token)
         jti = payload.get("jti")
+        if not jti or not isinstance(jti, str):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token is invalid or revoked",
+            )
         user_id = int(payload["sub"])
 
         stored_token = await self.token_repository.get_by_jti(jti)
@@ -98,6 +105,11 @@ class AuthService:
     async def logout(self, data: RefreshTokenRequest) -> MessageResponse:
         payload = self._decode_refresh_payload(data.refresh_token)
         jti = payload.get("jti")
+        if not jti or not isinstance(jti, str):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token is invalid or already revoked",
+            )
 
         stored_token = await self.token_repository.get_by_jti(jti)
         if not stored_token or stored_token.is_revoked:

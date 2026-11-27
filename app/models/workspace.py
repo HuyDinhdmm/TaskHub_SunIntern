@@ -1,7 +1,10 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, String, func
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.models.base import Base
 from app.models.enums import WorkspaceRole
 

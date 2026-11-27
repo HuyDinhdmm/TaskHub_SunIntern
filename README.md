@@ -63,6 +63,19 @@ tests/               # Async unit/integration tests (pytest-asyncio)
 - `PATCH /api/v1/users/me` - Cập nhật hồ sơ (full_name, email)
 - `PATCH /api/v1/users/me/password` - Đổi mật khẩu và thu hồi refresh token cũ
 
+## Workspace & Project Endpoints (RBAC)
+- `POST /api/v1/workspaces` - Tạo workspace (tự gán OWNER)
+- `GET /api/v1/workspaces/{id}` - Xem thông tin workspace
+- `PUT /api/v1/workspaces/{id}` - Sửa workspace (chỉ OWNER)
+- `DELETE /api/v1/workspaces/{id}` - Xóa workspace (chỉ OWNER)
+- `POST /api/v1/workspaces/{id}/members` - Mời member (OWNER gán OWNER/EDITOR/VIEWER)
+- `DELETE /api/v1/workspaces/{id}/members/{user_id}` - Xóa member (chỉ OWNER)
+- `PATCH /api/v1/workspaces/{id}/members/{user_id}` - Phân quyền lại member
+- `POST /api/v1/workspaces/{id}/projects` - Tạo project trong workspace (OWNER/EDITOR)
+- `GET /api/v1/projects/{id}` - Xem project
+- `PATCH /api/v1/projects/{id}` - Cập nhật/archive project (OWNER/EDITOR)
+- `DELETE /api/v1/projects/{id}` - Xóa project (chỉ OWNER)
+
 ## Hướng dẫn cài đặt và chạy
 
 1. Tạo môi trường ảo và cài thư viện:

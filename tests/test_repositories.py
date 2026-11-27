@@ -1,5 +1,6 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models import (
     Comment,
     Label,
@@ -46,9 +47,7 @@ async def test_models_relationships_and_repositories(db_session: AsyncSession):
     await db_session.commit()
 
     # 3. Tao Project
-    project = await project_repo.create(
-        Project(workspace_id=workspace.id, name="TaskHub Core")
-    )
+    project = await project_repo.create(Project(workspace_id=workspace.id, name="TaskHub Core"))
 
     # 4. Tao Label & Task & Comment
     label = Label(project_id=project.id, name="backend", color="#10B981")
