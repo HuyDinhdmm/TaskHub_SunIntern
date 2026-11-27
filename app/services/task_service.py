@@ -1,9 +1,10 @@
 import math
 from typing import Optional
 
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
 
 from app.core.cache import delete_cache, get_cache, set_cache
+from app.core.notifications import send_task_assignment_email
 from app.core.permissions import AccessControl
 from app.models.comment import Comment
 from app.models.enums import TaskPriority, TaskStatus, WorkspaceRole
@@ -62,7 +63,13 @@ class TaskService:
         )
         return project
 
-    async def create_task(self, project_id: int, data: TaskCreate, current_user: User) -> Task:
+    async def create_task(
+        self,
+        project_id: int,
+        data: TaskCreate,
+        current_user: User,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ) -> Task:
         # OWNER va EDITOR duoc tao task trong project
         await self._get_project_with_check(
             project_id=project_id,
@@ -70,6 +77,7 @@ class TaskService:
             allowed_roles=[WorkspaceRole.OWNER, WorkspaceRole.EDITOR],
         )
 
+        assignee = None
         if data.assignee_id is not None:
             assignee = await self.user_repository.get_by_id(data.assignee_id)
             if not assignee:
@@ -89,6 +97,16 @@ class TaskService:
             created_by=current_user.id,
         )
         saved = await self.repository.create(task)
+
+        # Gui email thong bao trong background neu co assignee
+        if assignee and background_tasks is not None:
+            background_tasks.add_task(
+                send_task_assignment_email,
+                to_email=assignee.email,
+                recipient_name=assignee.full_name or assignee.email,
+                task_title=saved.title,
+                task_id=saved.id,
+            )
 
         # Invalidate cache cua project nay
         await delete_cache(f"project:{project_id}:tasks:*")
@@ -182,6 +200,7 @@ class TaskService:
         task_id: int,
         data: TaskPatch,
         current_user: User,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> Task:
         task = await self.repository.get_by_id(task_id)
         if not task:
@@ -195,8 +214,32 @@ class TaskService:
             allowed_roles=[WorkspaceRole.OWNER, WorkspaceRole.EDITOR],
         )
 
+        old_assignee_id = task.assignee_id
         patch_data = data.model_dump(exclude_unset=True)
+
+        new_assignee = None
+        if "assignee_id" in patch_data and patch_data["assignee_id"] is not None:
+            new_assignee_id = patch_data["assignee_id"]
+            if new_assignee_id != old_assignee_id:
+                new_assignee = await self.user_repository.get_by_id(new_assignee_id)
+                if not new_assignee:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Assignee user with id {new_assignee_id} not found",
+                    )
+
         await self.repository.update(task, patch_data)
+
+        # Gui email thong bao neu co assignee moi
+        if new_assignee and background_tasks is not None:
+            background_tasks.add_task(
+                send_task_assignment_email,
+                to_email=new_assignee.email,
+                recipient_name=new_assignee.full_name or new_assignee.email,
+                task_title=task.title,
+                task_id=task.id,
+            )
+
         await delete_cache(f"project:{task.project_id}:tasks:*")
         return await self.repository.get_detail(task_id) or task
 
